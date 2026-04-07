@@ -1,12 +1,11 @@
-
 import streamlit as st
 import numpy as np
 import pickle
 from PIL import Image
-#from streamlit_drawable_canvas import st_canvas
+from streamlit_drawable_canvas import st_canvas
 
 # ------------------------------
-# 1. Load the trained model
+# Load Model
 # ------------------------------
 @st.cache_resource
 def load_model():
@@ -17,71 +16,100 @@ def load_model():
 model = load_model()
 
 # ------------------------------
-# 2. App title & description
+# Page Config
 # ------------------------------
-st.set_page_config(page_title="Handwritten Digit Recogniser by nicck The Great 💪🏼😎", page_icon="✍️")
-st.title("✍️ Handwritten Digit Recogniser")
-st.markdown("Draw a digit (0‑9) in the box below. The model will predict it instantly.")
+st.set_page_config(
+    page_title="🔥 AI Digit Recogniser",
+    page_icon="✍️",
+    layout="wide"
+)
+
+st.title("🤖 AI Handwritten Digit Recogniser")
+st.markdown("Draw a digit (0-9) and let Gradient Boosting predict it 🚀")
 
 # ------------------------------
-# 3. Canvas for drawing
+# Sidebar Controls
 # ------------------------------
-# Use a session state key to reset the canvas when "Clear" is pressed
+st.sidebar.header("🎨 Drawing Settings")
+
+brush_size = st.sidebar.slider("Brush Size", 5, 30, 15)
+brush_color = st.sidebar.color_picker("Brush Color", "#000000")
+bg_color = st.sidebar.color_picker("Background Color", "#FFFFFF")
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("🧠 Model Info")
+st.sidebar.write("Model: Gradient Boosting")
+st.sidebar.write("Dataset: sklearn digits (8x8)")
+st.sidebar.write("Classes: 0 - 9")
+
+# ------------------------------
+# Canvas Reset
+# ------------------------------
 if "canvas_key" not in st.session_state:
     st.session_state.canvas_key = 0
 
-# Drawing canvas settings
-canvas_result = st_canvas(
-    fill_color="rgba(255, 255, 255, 1)",   # white fill
-    stroke_width=15,
-    stroke_color="black",
-    background_color="white",
-    width=280,          # canvas width in pixels
-    height=280,         # canvas height in pixels
-    drawing_mode="freedraw",
-    key=f"canvas_{st.session_state.canvas_key}",
-    update_streamlit=True,
-)
+col1, col2 = st.columns([3, 2])
 
-# Clear button
-col1, col2 = st.columns([1, 5])
 with col1:
-    if st.button("🗑️ Clear"):
+    canvas_result = st_canvas(
+        fill_color="rgba(255,255,255,1)",
+        stroke_width=brush_size,
+        stroke_color=brush_color,
+        background_color=bg_color,
+        width=300,
+        height=300,
+        drawing_mode="freedraw",
+        key=f"canvas_{st.session_state.canvas_key}",
+    )
+
+    if st.button("🗑️ Clear Canvas"):
         st.session_state.canvas_key += 1
         st.rerun()
 
 # ------------------------------
-# 4. Preprocess and predict
+# Prediction Section
 # ------------------------------
-if canvas_result.image_data is not None:
-    # Convert canvas image (RGB) to grayscale PIL image
-    img = Image.fromarray(canvas_result.image_data.astype("uint8"), "RGB")
-    img_gray = img.convert("L")   # 8‑bit grayscale, 0 = black, 255 = white
+with col2:
+    st.subheader("📊 Prediction Result")
 
-    # Resize to 8×8 (same as original digits dataset)
-    img_resized = img_gray.resize((8, 8), Image.Resampling.LANCZOS)
+    if canvas_result.image_data is not None:
 
-    # Convert to numpy array and flatten
-    pixels = np.array(img_resized, dtype=np.float32).reshape(64)
+        img = Image.fromarray(canvas_result.image_data.astype("uint8"), "RGB")
+        img = img.convert("L")
+        img = img.resize((8, 8))
 
-    # Invert and scale to match the original range (0 = background, 16 = digit)
-    # Original: white=0, black=16
-    # Canvas:   white=255, black=0
-    pixels = 16 - (pixels / 255.0 * 16)
-    # Clip to [0,16] for safety
-    pixels = np.clip(pixels, 0, 16)
+        pixels = np.array(img).reshape(64)
+        pixels = 16 - (pixels / 255.0 * 16)
+        pixels = np.clip(pixels, 0, 16)
 
-    # Predict
-    pred = model.predict([pixels])[0]
-    proba = model.predict_proba([pixels])[0]
+        pred = model.predict([pixels])[0]
+        proba = model.predict_proba([pixels])[0]
 
-    # Show prediction
-    st.subheader(f"🔮 Prediction: **{pred}**")
-    st.progress(float(proba[pred]), text=f"Confidence: {proba[pred]:.2%}")
+        # 🔮 Main Prediction
+        st.success(f"🎯 Predicted Digit: {pred}")
+        st.progress(float(proba[pred]))
 
-    # Optional: display the small 8×8 image that the model actually sees
-    st.markdown("**What the model sees (8×8 resized & scaled)**")
-    small_img = (pixels / 16.0 * 255).astype(np.uint8).reshape(8, 8)
-    st.image(small_img, caption="8×8 input to the model", width=150, clamp=True)
-else:
-    st.info("✏️ Draw a digit on the canvas above – the prediction will appear here.")
+        # 🔝 Top 3 Predictions
+        st.markdown("### 🔝 Top Predictions")
+        top3 = np.argsort(proba)[-3:][::-1]
+
+        for i in top3:
+            st.write(f"Digit {i} → {proba[i]*100:.2f}%")
+
+        # 📈 Confidence Chart
+        st.markdown("### 📈 Confidence Chart")
+        st.bar_chart(proba)
+
+        # 👁️ What model sees
+        st.markdown("### 👁️ Model View (8x8)")
+        small_img = (pixels / 16.0 * 255).astype(np.uint8).reshape(8, 8)
+        st.image(small_img, width=150)
+
+    else:
+        st.info("✏️ Draw something to see prediction")
+
+# ------------------------------
+# Footer
+# ------------------------------
+st.markdown("---")
+st.markdown("Made with ❤️ by Nikhil Dongare")
