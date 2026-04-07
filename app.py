@@ -10,37 +10,29 @@ from streamlit_drawable_canvas import st_canvas
 @st.cache_resource
 def load_model():
     with open("digits_model.pkl", "rb") as f:
-        model = pickle.load(f)
-    return model
+        return pickle.load(f)
 
 model = load_model()
 
 # ------------------------------
 # Page Config
 # ------------------------------
-st.set_page_config(
-    page_title="🔥 AI Digit Recogniser",
-    page_icon="✍️",
-    layout="wide"
-)
+st.set_page_config(page_title="AI Digit Recogniser", page_icon="✍️", layout="wide")
 
 st.title("🤖 AI Handwritten Digit Recogniser")
-st.markdown("Draw a digit (0-9) and let Gradient Boosting predict it 🚀")
+st.markdown("Draw a digit (0-9) and AI will predict it!")
 
 # ------------------------------
-# Sidebar Controls
+# Sidebar
 # ------------------------------
-st.sidebar.header("🎨 Drawing Settings")
-
+st.sidebar.header("🎨 Settings")
 brush_size = st.sidebar.slider("Brush Size", 5, 30, 15)
 brush_color = st.sidebar.color_picker("Brush Color", "#000000")
-bg_color = st.sidebar.color_picker("Background Color", "#FFFFFF")
+bg_color = st.sidebar.color_picker("Background", "#FFFFFF")
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("🧠 Model Info")
-st.sidebar.write("Model: Gradient Boosting")
-st.sidebar.write("Dataset: sklearn digits (8x8)")
-st.sidebar.write("Classes: 0 - 9")
+st.sidebar.write("🧠 Model: Gradient Boosting")
+st.sidebar.write("📊 Dataset: sklearn digits")
 
 # ------------------------------
 # Canvas Reset
@@ -52,25 +44,24 @@ col1, col2 = st.columns([3, 2])
 
 with col1:
     canvas_result = st_canvas(
-        fill_color="rgba(255,255,255,1)",
         stroke_width=brush_size,
         stroke_color=brush_color,
         background_color=bg_color,
-        width=300,
         height=300,
+        width=300,
         drawing_mode="freedraw",
         key=f"canvas_{st.session_state.canvas_key}",
     )
 
-    if st.button("🗑️ Clear Canvas"):
+    if st.button("🗑️ Clear"):
         st.session_state.canvas_key += 1
         st.rerun()
 
 # ------------------------------
-# Prediction Section
+# Prediction
 # ------------------------------
 with col2:
-    st.subheader("📊 Prediction Result")
+    st.subheader("📊 Result")
 
     if canvas_result.image_data is not None:
 
@@ -85,31 +76,22 @@ with col2:
         pred = model.predict([pixels])[0]
         proba = model.predict_proba([pixels])[0]
 
-        # 🔮 Main Prediction
-        st.success(f"🎯 Predicted Digit: {pred}")
+        st.success(f"🎯 Prediction: {pred}")
         st.progress(float(proba[pred]))
 
-        # 🔝 Top 3 Predictions
-        st.markdown("### 🔝 Top Predictions")
+        st.markdown("### 🔝 Top 3 Predictions")
         top3 = np.argsort(proba)[-3:][::-1]
-
         for i in top3:
-            st.write(f"Digit {i} → {proba[i]*100:.2f}%")
+            st.write(f"{i} → {proba[i]*100:.2f}%")
 
-        # 📈 Confidence Chart
-        st.markdown("### 📈 Confidence Chart")
         st.bar_chart(proba)
 
-        # 👁️ What model sees
-        st.markdown("### 👁️ Model View (8x8)")
+        st.markdown("### 👁️ Model View")
         small_img = (pixels / 16.0 * 255).astype(np.uint8).reshape(8, 8)
         st.image(small_img, width=150)
 
     else:
-        st.info("✏️ Draw something to see prediction")
+        st.info("Draw a digit ✏️")
 
-# ------------------------------
-# Footer
-# ------------------------------
 st.markdown("---")
-st.markdown("Made with ❤️ by Nikhil Dongare")
+st.markdown("Made by Nikhil Dongare 🚀")
