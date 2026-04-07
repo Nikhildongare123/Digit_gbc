@@ -19,7 +19,7 @@ model = load_model()
 # ------------------------------
 # 2. App title & description
 # ------------------------------
-st.set_page_config(page_title="Handwritten Digit Recogniser by Pratik The Great 💪🏼😎", page_icon="✍️")
+st.set_page_config(page_title="Handwritten Digit Recogniser by nicck The Great 💪🏼😎", page_icon="✍️")
 st.title("✍️ Handwritten Digit Recogniser")
 st.markdown("Draw a digit (0‑9) in the box below. The model will predict it instantly.")
 
