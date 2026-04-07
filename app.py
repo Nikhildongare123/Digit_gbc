@@ -3,7 +3,7 @@ import streamlit as st
 import numpy as np
 import pickle
 from PIL import Image
-from streamlit_drawable_canvas import st_canvas
+#from streamlit_drawable_canvas import st_canvas
 
 # ------------------------------
 # 1. Load the trained model
